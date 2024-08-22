@@ -29,7 +29,7 @@ Packages loaded.
 b) loading dependent data...
 
 ```{r}
-data<-read.csv(file="HABRI_Y1_Experiment1/Cleaned_data/Y1_Exp1_allData.csv", header=TRUE)
+data<-read.csv(file="Y1_Exp1_SHtrials/Original_data/Y1_Exp1_allData.csv", header=TRUE)
 ```
 
 Data loaded.
@@ -179,7 +179,7 @@ b) plotting histographs of all response variables...
 
 ```{r}
 ### check the figure size and resolution mins for publication ####
-png(file="HABRI_Y1_Experiment1/Products/SI_Figures/SI_Figure2.png", width=4,height=4, units="in", res=1200)
+png(file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Figure2.png", width=4,height=4, units="in", res=1200)
 SI_fig2<- layout(matrix(c(1,2,3,4,5,6), nrow=2, ncol=3)) 
 hist(data2$Microcystin_ugL, 
      main="non-transformed", xlab="Post Microcystin", cex.main=1, cex.lab=1)
@@ -203,7 +203,7 @@ Histographs plotted. All response variables need to be log_10-transformed.
 c) summarizing post-measurements across source water...
 
 ```{r}
-png(file="HABRI_Y1_Experiment1/Products/SI_Figures/SI_Figure10.png", 
+png(file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Figure10.png", 
      width=4,height=3, units="in", res=1200) #pub size and res mins
 SI_fig10<- layout(matrix(c(1,2,3), nrow=1, ncol=3)) 
 par(srt=45)
@@ -228,7 +228,8 @@ summary_chla<- data2 %>% #among the post-measurements
   group_by(Lake, Treatment) %>% #for each lake and treatment
   summarise(avgChla_ugL=mean(Chla_ugL, na.rm=TRUE), #calculate the mean + sd
             sdChla_ugL=sd(Chla_ugL, na.rm = TRUE))
-print(summary_chla, n=30) #prints the table
+SI_Table3<-print(summary_chla, n=30) #prints the table
+write.csv(SI_Table3, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Table3.csv")
 
 SI_fig3<- ggplot(data=data2, 
        mapping=aes(y=Chla_ugL, x=Treatment)) +
@@ -240,18 +241,19 @@ SI_fig3<- ggplot(data=data2,
   facet_wrap(~Lake) +
   labs(x="Treatment Group", y="Chlorophyll-a (ug/L)")+
   theme_classic() +
-  theme(axis.text.x = element_text(angle =g 90, hjust=0.5,vjust=0.5),
+  theme(axis.text.x = element_text(angle = 90, hjust=0.5,vjust=0.5),
         legend.position="none")  
 
 SI_fig3
-ggsave(SI_fig3, file="HABRI_Y1_Experiment1/Products/SI_Figures/SI_Figure3_color.png",device="png", width=5, height=5, units="in", dpi=1200)
+ggsave(SI_fig3, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Figure3_color.png",device="png", width=6, height=6, units="in")
 
 ### summarize and plot all post PC values ###
 summary_pc<- data2 %>%
   group_by(Lake, Treatment) %>%
   summarise(avgPC_ugL=mean(PC_ugL, na.rm=TRUE),
             sdPC_ugL=sd(PC_ugL, na.rm = TRUE))
-print(summary_pc, n=30)
+SI_Table4<- print(summary_pc, n=30)
+write.csv(SI_Table4, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Table4.csv")
 
 SI_fig4<- ggplot(data=data2, 
        mapping=aes(y=PC_ugL, x=Treatment)) +
@@ -266,14 +268,15 @@ SI_fig4<- ggplot(data=data2,
   theme(axis.text.x = element_text(angle = 90, hjust=0.5,vjust=0.5),
         legend.position = "none") 
 SI_fig4
-ggsave(SI_fig4, file="HABRI_Y1_Experiment1/Products/SI_Figures/SI_Figure4_color.png",device="png", width=5, height=5, units="in", dpi=1200)
+ggsave(SI_fig4, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Figure4_color.png",device="png", width=5, height=5, units="in", dpi=1200)
 
 ### summarize and plot all post microcystin values ###
 summary_mic<- data2 %>%
   group_by(Lake, Treatment) %>%
   summarise(avgMic_ugL=mean(Microcystin_ugL, na.rm=TRUE),
             sdMic_ugL=sd(Microcystin_ugL, na.rm = TRUE))
-print(summary_mic, n=30)
+SI_Table5<- print(summary_mic, n=30)
+write.csv(SI_Table5, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Table5.csv")
 
 SI_fig8<- ggplot(data=data2, 
        mapping=aes(y=Microcystin_ugL, x=Treatment)) +
@@ -290,49 +293,65 @@ SI_fig8<- ggplot(data=data2,
   scale_y_continuous(trans='log10') +
   geom_hline(yintercept=0.19, linetype="dashed", color = "red")
 SI_fig8
-ggsave(SI_fig8, file="HABRI_Y1_Experiment1/Products/SI_Figures/SI_Figure8_color.png",device="png", width=5, height=5, units="in", dpi=1200)
+ggsave(SI_fig8, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Figure8_color.png",device="png", width=5, height=5, units="in", dpi=1200)
 
 ### post DOC measurements ###
 summary_doc<- data2 %>%
   group_by(Lake, Treatment) %>%
   summarise(avgDOC_mgL=mean(DOC_mgL, na.rm=TRUE),
             sdDOC_mgL=sd(DOC_mgL, na.rm = TRUE))
-print(summary_doc, n =30)
+SI_Table6<- print(summary_doc, n =30)
+write.csv(SI_Table6, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Table6.csv")
 
 ### post TN measurements ###
 summary_TN<- data2 %>%
   group_by(Lake, Treatment) %>%
   summarise(avgTN_mgL=mean(TN_mgL, na.rm=TRUE),
             sdTN_mgL=sd(TN_mgL, na.rm = TRUE))
-print(summary_TN, n = 30)
+SI_Table7<- print(summary_TN, n = 30)
+write.csv(SI_Table7, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Table7.csv")
 
 ### post TP measurements ###
 summary_TP<- data2 %>%
   group_by(Lake, Treatment) %>%
   summarise(avgTP_mgL=mean(TP_mgL, na.rm=TRUE),
             sdTP_mgL=sd(TP_mgL, na.rm = TRUE))
-print(summary_TP, n = 30)
+SI_Table8<- print(summary_TP, n = 30)
+write.csv(SI_Table8, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Table8.csv")
 
-### post SRP measurements ###
-summary<- data2 %>%
-  group_by(Lake, Treatment) %>%
-  summarise(avg=mean(PO4_P_ugL, na.rm=TRUE),
-            sd=sd(PO4_P_ugL, na.rm = TRUE))
-print(summary, n = 30)
+### post dissolved measurements by Lake ###
+summary<- subset(data2, Lake=="Maumee") %>%
+  group_by(Treatment) %>%
+  summarise(avg_PO4=mean(PO4_P_ugL, na.rm=TRUE),
+            sd_PO4=sd(PO4_P_ugL, na.rm = TRUE),
+            avg_NH4=mean(NH4_N_ugL, na.rm=TRUE),
+            sd_NH4=sd(NH4_N_ugL, na.rm = TRUE),
+            avg_NO3=mean(NO3_N_ugL, na.rm=TRUE),
+            sd_NO3=sd(NO3_N_ugL, na.rm = TRUE))
+SI_Table9<- print(summary)
+write.csv(SI_Table9, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Table9.csv")
 
-### post NH4 measurements ###
-summary<- data2 %>%
-  group_by(Lake, Treatment) %>%
-  summarise(avg=mean(NH4_N_ugL, na.rm=TRUE),
-            sd=sd(NH4_N_ugL, na.rm = TRUE))
-print(summary, n = 30)
+summary<- subset(data2, Lake=="Sandusky") %>%
+  group_by(Treatment) %>%
+  summarise(avg_PO4=mean(PO4_P_ugL, na.rm=TRUE),
+            sd_PO4=sd(PO4_P_ugL, na.rm = TRUE),
+            avg_NH4=mean(NH4_N_ugL, na.rm=TRUE),
+            sd_NH4=sd(NH4_N_ugL, na.rm = TRUE),
+            avg_NO3=mean(NO3_N_ugL, na.rm=TRUE),
+            sd_NO3=sd(NO3_N_ugL, na.rm = TRUE))
+SI_Table10<- print(summary)
+write.csv(SI_Table10, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Table10.csv")
 
-### post NO3 measurements ###
-summary<- data2 %>%
-  group_by(Lake, Treatment) %>%
-  summarise(avg=mean(NO3_N_ugL, na.rm=TRUE),
-            sd=sd(NO3_N_ugL, na.rm = TRUE))
-print(summary, n = 30)
+summary<- subset(data2, Lake=="Grand") %>%
+  group_by(Treatment) %>%
+  summarise(avg_PO4=mean(PO4_P_ugL, na.rm=TRUE),
+            sd_PO4=sd(PO4_P_ugL, na.rm = TRUE),
+            avg_NH4=mean(NH4_N_ugL, na.rm=TRUE),
+            sd_NH4=sd(NH4_N_ugL, na.rm = TRUE),
+            avg_NO3=mean(NO3_N_ugL, na.rm=TRUE),
+            sd_NO3=sd(NO3_N_ugL, na.rm = TRUE))
+SI_Table11<- print(summary)
+write.csv(SI_Table11, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Table11.csv")
 ```
 
 Post-measurements summarized by treatments.
@@ -373,7 +392,7 @@ SI_fig11a<-ggplot(data=SHtest_Chl, #plots the model
        y="Post Chlorophyll-a (ug/L), log10-transformed",
        color="Treatment", shape="Source Water")
 SI_fig11a
-ggsave(SI_fig11a, file="HABRI_Y1_Experiment1/Products/SI_Figures/SI_Figure11a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
+ggsave(SI_fig11a, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Figure11a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
 
 ### comparison within source waters ###
 SHtest_Chl<- SHtest_Chl %>%
@@ -435,7 +454,7 @@ SI_fig12a<-ggplot(data=SHtest_PC, #plots the model
        y="Post Phycocyanin (ug/L), log10-transformed",
        color="Treatment", shape="Source Water")
 SI_fig12a
-ggsave(SI_fig12a, file="HABRI_Y1_Experiment1/Products/SI_Figures/SI_Figure12a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
+ggsave(SI_fig12a, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Figure12a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
 
 ### comparison within source waters ###
 SHtest_PC<- SHtest_PC %>%
@@ -499,7 +518,7 @@ SI_fig13a<-ggplot(data=SHtest_MC, #plots the model
        shape="Source Water",
        color="Treatment")
 SI_fig13a
-ggsave(SI_fig13a, file="HABRI_Y1_Experiment1/Products/SI_Figures/SI_Figure13a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
+ggsave(SI_fig13a, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Figure13a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
 
 ### comparison within source waters ###
 SHtest_MC<- SHtest_MC %>%
@@ -535,7 +554,7 @@ d) saving plots...
 ```{r}
 fig2<- ggarrange(fig2a, fig2b, fig2c, ncol=3, nrow=1)
 fig2
-#ggsave(fig2, file="HABRI_Y1_Experiment1/Products/Figure2.jpeg", device="jpeg", width=8, height=4, units="in", dpi=1200)
+#ggsave(fig2, file="Y1_Exp1_SHtrials/Products/Figure2_color.png", device="png", width=6, height=5, units="in", dpi=1200)
 ```
 
 Plots saved.
@@ -570,7 +589,7 @@ SHtest2_Chl <- SHtest2_Chl[-61,] #delete record 61 as an outlier.
 Chl_ancova2<- lm(data=SHtest2_Chl, 
                log10(Chla_ugL)~log10(pre_Chl)+tDOM_added*AddedNut_ratio*Added_Nform)
 par(mfrow=c(2,2))
-plot(Chl_ancova2) #plot diagnostics for model
+SI_Fig14b<-plot(Chl_ancova2) #plot diagnostics for model
 par(mfrow=c(1,1))
 
 ### print the summary statistics from the model ###
@@ -589,7 +608,7 @@ SI_fig14a<- ggplot(data=SHtest2_Chl, #plots the model
        shape="Source Water",
        color="Treatment")
 SI_fig14a
-ggsave(SI_fig14a, file="HABRI_Y1_Experiment1/Products/SI_Figures/SI_Figure14a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
+ggsave(SI_fig14a, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Figure14a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
 
 ### compare within source waters ###
 SHtest2_Chl<- SHtest2_Chl %>%
@@ -624,7 +643,7 @@ Figure3<- ggplot(data=SHtest2_Chl, aes(x=Lake, y=Chl_diff_ugL,
   stat_compare_means(label="p.signif", size=8, label.y=300,
                      method="t.test")
 Figure3
-#ggsave(Figure3, file="HABRI_Y1_Experiment1/Products/Figure3_color.png", device="png", width=5, height=5, units="in", dpi=1200)
+#ggsave(Figure3, file="Y1_Exp1_SHtrials/Products/Figure3_color.png", device="png", width=5, height=5, units="in", dpi=1200)
 ```
 
 Chla RM-ANCOVA ran and plotted.
@@ -676,7 +695,7 @@ SI_fig15a<- ggplot(data=SHtest2_PC, #plots the model
        shape="Source Water",
        color="Treatment")
 SI_fig15a
-ggsave(SI_fig15a, file="HABRI_Y1_Experiment1/Products/SI_Figures/SI_Figure15a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
+ggsave(SI_fig15a, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Figure15a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
 
 ### compare within source waters ###
 SHtest2_PC<- SHtest2_PC %>%
@@ -745,7 +764,7 @@ SHtest2_MC <- SHtest2_MC[-c(56,57,60),] #delete record 8 and 11 as outliers.
 MC_ancova2<- lm(data=SHtest2_MC, 
                log10(Microcystin_ugL)~log10(pre_Mic)+tDOM_added*AddedNut_ratio*Added_Nform)
 par(mfrow=c(2,2))
-plot(MC_ancova2) #print model diagnostics
+SI_Figure16b<-plot(MC_ancova2) #print model diagnostics
 par(mfrow=c(1,1))
 
 ### print the summary statistics from the model ###
@@ -764,7 +783,7 @@ SI_fig16a<- ggplot(data=SHtest2_MC, #plots the model
        shape="Source Water",
        color="Treatment")
 SI_fig16a
-ggsave(SI_fig16a, file="HABRI_Y1_Experiment1/Products/SI_Figures/SI_Figure16a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
+ggsave(SI_fig16a, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Figure16a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
 
 
 ### compare within source waters ###
