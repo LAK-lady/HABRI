@@ -9,6 +9,7 @@ This repository contains the original data and processing code for the Year 1, E
 
 - HABRI_Y1_Exp1_analysis.Rmd - the R code used to process and analyze data from all experiments
 - (subfolder) Products - includes the printouts of tables, figures, and supplemental tables and figures referred to in the manuscript. The data workflow is also provided as a knitted html file.
+- (subfolder) Products (subfolder) SI_Figures - contains the SI tables and figures referenced in the supplementary material file.
 - (subfolder) Original_data - includes the original data from the experiments
 
 # Background
