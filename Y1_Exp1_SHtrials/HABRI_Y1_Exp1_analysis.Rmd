@@ -3,8 +3,8 @@ title: "HABRI_Y1_Exp1_SHtrials"
 author: "Lauren Knose"
 date: "2024-08-19"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 editor_options:
   chunk_output_type: console
 ---

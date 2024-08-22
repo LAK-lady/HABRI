@@ -4,11 +4,9 @@ This repository serves houses the data, processing code, and products related to
 
 The work contained herein is divided into three experimental groups, including two rounds of laboratory bottle experiments, which occurred in the first year of funding (Y1 Experiment 1 SuperHume trials and Y1 Experiment 2 tDOM source trials), and a third round of experiments which occurred in the second year of funding using the large Mesocosms at the Miami University Ecological Research Center. 
 
-The lead PI for this work is Dr. Craig Williamson and the co-PIs for this work include Dr. Lauren Knose, Dr. Michael Vanni, Dr. Matthew Saxton, Ms. Erin Overholt affiliated with Miami University, Oxford, Ohio (USA).
-
 # Authorship
 
-This repository was generated and maintained by Lauren Knose, PhD through an ORISE appointment with the U.S. Environmental Protection Agency. All code was written using R software (version 4.4.1). 
+This repository was generated and maintained by Lauren Knose, PhD through an ORISE appointment with the U.S. Environmental Protection Agency. All code was written using R software (version 4.4.1). All inquiries about this work should be direct to Dr. Knose.
 
 # Funding
 
