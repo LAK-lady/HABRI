@@ -1,5 +1,5 @@
 # Overview
-This folder services as the public repository for the manuscript by Knose et al. titled "Impact of terrestrial dissolved organic matter on cyanobacteria density and toxin production," submitted for publication in _Harmful Algae_.
+This folder services as the public repository for the manuscript by Knose et al. titled "Impact of terrestrial dissolved organic matter on cyanobacteria density and toxin production," submitted for publication in _Harmful Algae_ in August 2024.
 
 # Authorship
 This repository was generated and maintained by Lauren Knose, PhD through an ORISE appointment with the U.S. Environmental Protection Agency. All code was written using R software (version 4.4.1). 
