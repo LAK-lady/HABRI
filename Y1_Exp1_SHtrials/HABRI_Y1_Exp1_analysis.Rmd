@@ -29,7 +29,7 @@ Packages loaded.
 b) loading dependent data...
 
 ```{r}
-data<-read.csv(file="Y1_Exp1_SHtrials/Original_data/Y1_Exp1_allData.csv", header=TRUE)
+data<-read.csv(file="Y1_Exp1_SHtrials/Y1_Exp1_allData.csv", header=TRUE)
 ```
 
 Data loaded.
