@@ -26,7 +26,7 @@ Packages loaded.
 b) loading dependent data...
 
 ```{r}
-data<-read.csv(file="Y1_Exp2_allData.csv", header=TRUE)
+data<-read.csv(file="Y1_Exp2_tDOMsource/Y1_Exp2_allData.csv", header=TRUE)
 ```
 
 Data loaded.
@@ -65,23 +65,23 @@ data$tDOM_added<-factor(data$tDOM_added, levels=c('none','tDOM added'),
 unique(data$Nut_added) 
 data$Nut_added<-factor(data$Nut_added, levels=c('none','nutrients added'), 
                             ordered=TRUE)
+
+unique(data$tDOM_source)
+data$tDOM_source<-factor(data$tDOM_source, levels=c('none', 'wetland','crop', 'manure'),
+                         ordered=TRUE)
 ```
 
-b) converting units...
+b) restructuring the data...
+
 ```{r}
+### converting units ###
 data<- data %>%
   mutate(NH4_N_ugL=NH4_mgL*1000, NH4_mgL=NULL, #convert mg to ug
          NO3_N_ugL=NO3_mgL*1000, NO3_mgL=NULL,#convert mg to ug
          TNTP_ratio=TN_mgL/TP_mgL) %>% 
   rename(PO4_P_ugL=PO4_ugL)#remove old field
-```
 
-Units converted.
-
-c) adding pre (initial) measurements as new field...
-
-```{r}
-### calculate pre measurement means by source water ###
+### calculate average initial measurements by source water ###
 init<- data %>% #create new data frame 
   filter(Treatment=="initial") %>% #of only initial treatments
   group_by(Lake)  %>% #group by source water
@@ -107,7 +107,7 @@ init<- data %>% #create new data frame
          sd_TNTP_ratio=sd(TNTP_ratio, na.rm=TRUE))  
 t(init) #prints out the summary by lake of pre measurements
 
-### extract pre values by source water ###
+### extract initial values by source water ###
 Maumee_preMic<- init$pre_Mic_ugL[init$Lake=="Maumee" & init$pre_Mic_ugL]
 Maumee_prePC<- init$pre_PC_ugL[init$Lake=="Maumee" & init$pre_PC_ugL]
 Maumee_pre_Chl<- init$pre_Chla_ugL[init$Lake=="Maumee" & init$pre_Chla_ugL]
@@ -117,12 +117,7 @@ Sandusky_pre_Chl<- init$pre_Chla_ugL[init$Lake=="Sandusky" & init$pre_Chla_ugL]
 Grand_preMic<- init$pre_Mic_ugL[init$Lake=="Grand" & init$pre_Mic_ugL]
 Grand_prePC<- init$pre_PC_ugL[init$Lake=="Grand" & init$pre_PC_ugL]
 Grand_pre_Chl<- init$pre_Chla_ugL[init$Lake=="Grand" & init$pre_Chla_ugL]
-```
 
-
-d) creating new data frame:
-
-```{r}
 ### create new data frame with pre and post measurements ###
 data2<- data %>%
   mutate(pre_Mic=ifelse(Lake=="Maumee", Maumee_preMic, 
@@ -137,7 +132,7 @@ data2<- data %>%
          ) %>%
   filter(Treatment!="initial") #remove the initial treatment, since separate field
 
-### verify "pre"  removed as treatment and reorder labels ###
+### verify initials  removed as treatment group and reorder labels ###
 unique(data2$Treatment) 
 data2$Treatment<-factor(data2$Treatment, levels=c('control', 
                                                 'nutrients only', 
@@ -150,7 +145,20 @@ data2$Treatment<-factor(data2$Treatment, levels=c('control',
                        ordered=TRUE)
 ```
 
-Pre measurements added as new field.
+Data restructured.
+
+c) subsetting the data:
+
+```{r}
+data_mau<-data2 %>%
+  filter(Lake=='Maumee') #creates a new data file with just post measurements in Maumee Bay
+data_san<-data2 %>%
+  filter(Lake=='Sandusky') #creates a new data file with just post measurements in Sandusky Bay
+data_gra<-data2 %>%
+  filter(Lake=='Grand') #creates a new data file with just post measurements in Grand Lake
+```
+
+Data subset by lake.
 
 ## Step 3. Summarize and view the data:
 
@@ -175,8 +183,8 @@ b) plotting histographs of all response variables...
 
 ```{r}
 ### check the figure size and resolution mins for publication ####
-png(file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Figure2.png", width=4,height=4, units="in", res=1200)
-SI_fig2<- layout(matrix(c(1,2,3,4,5,6), nrow=2, ncol=3)) 
+png(file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Figure1.png", width=4,height=4, units="in", res=1200)
+SI_fig1<- layout(matrix(c(1,2,3,4,5,6), nrow=2, ncol=3)) 
 hist(data2$Microcystin_ugL, 
      main="non-transformed", xlab="Post Microcystin", cex.main=1, cex.lab=1)
 hist(log10(data2$Microcystin_ugL), 
@@ -189,19 +197,47 @@ hist(data2$Chla_ugL,
      main="non-transformed", xlab="Post Chlorophyll-a", cex.main=1, cex.lab=1)
 hist(log10(data2$Chla_ugL), 
      main="log10-transformed", xlab="Post Chlorophyll-a", cex.main=1, cex.lab=1)
-SI_fig2 #prints figure
+SI_fig1 #prints figure
 dev.off() #closes the graphing device
 tryCatch({while (T) dev.off()}, error = \(e) NULL) #needed to plot in Plot window again
 ```
 
 Histographs plotted. All response variables need to be log_10-transformed.
 
-c) summarizing post-measurements across source water...
+c) summarizing pre and post-measurements across source water...
 
 ```{r}
-png(file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Figure10.png", 
+### summarizing the initial conditions by source water ###
+summary_init <- data %>%
+  filter(Observation=="pre") %>%
+  group_by(Lake) %>%
+  summarize(avgDOC=mean(DOC_mgL, na.rm=TRUE),
+            sdDOC=sd(DOC_mgL, na.rm=TRUE),
+            avgTN=mean(TN_mgL, na.rm=TRUE),
+            sdTN=sd(TN_mgL, na.rm=TRUE),
+            avgTP=mean(TP_mgL, na.rm=TRUE),
+            sdTP=sd(TP_mgL, na.rm=TRUE),
+            avgTNTP=mean(TNTP_ratio, na.rm=TRUE),
+            sdTNTP=sd(TNTP_ratio, na.rm=TRUE),
+            avgPO4=mean(PO4_P_ugL, na.rm=TRUE),
+            sdPO4=sd(PO4_P_ugL, na.rm=TRUE),
+            avgNH4=mean(NH4_N_ugL, na.rm=TRUE),
+            sdNH4=sd(NH4_N_ugL, na.rm=TRUE),
+            avgNO3=mean(NO3_N_ugL, na.rm=TRUE),
+            sdNO3=sd(NO3_N_ugL, na.rm=TRUE),
+            avgChla=mean(Chla_ugL, na.rm=TRUE),
+            sdChla=sd(Chla_ugL, na.rm = TRUE),
+            avgPC=mean(PC_ugL, na.rm=TRUE),
+            sdPC=sd(PC_ugL, na.rm=TRUE),
+            avgMC=mean(Microcystin_ugL, na.rm=TRUE),
+            sdMC=sd(Microcystin_ugL, na.rm=TRUE)) %>%
+  ungroup()
+write.csv(summary_init, file="Y1_Exp2_tDOMsource/Products/Table1.csv") #prints out the summary by lake of initial microcystin
+
+### summarizing the post measurments across source water ###
+png(file="Y1_Exp2_tDOMsource/Products/Figure2.png", 
      width=4,height=3, units="in", res=1200) #pub size and res mins
-SI_fig10<- layout(matrix(c(1,2,3), nrow=1, ncol=3)) 
+Fig2<- layout(matrix(c(1,2,3), nrow=1, ncol=3)) 
 par(srt=45)
 boxplot(data=data2, Chla_ugL~Lake, #create boxplot to show mean Chl-a by Lake
         xlab=NULL, ylab="Chlorophyll-a (ug/L)", las=2)
@@ -209,7 +245,7 @@ boxplot(data=data2, PC_ugL~Lake, #create boxplot to show mean Chl-a by Lake
         xlab=NULL, ylab="Phycocyanin (ug/L)", las=2)
 boxplot(data=data2, Microcystin_ugL~Lake, #create boxplot to show mean Chl-a by Lake
         xlab=NULL, ylab="Total Microcystins (ug/L)", las=2)
-SI_fig10 #prints figure
+Fig2 #prints figure
 dev.off() #closes the graphing device
 tryCatch({while (T) dev.off()}, error = \(e) NULL) #needed to plot in Plot window again
 ```
@@ -224,10 +260,10 @@ summary_chla<- data2 %>% #among the post-measurements
   group_by(Lake, Treatment) %>% #for each lake and treatment
   summarise(avgChla_ugL=mean(Chla_ugL, na.rm=TRUE), #calculate the mean + sd
             sdChla_ugL=sd(Chla_ugL, na.rm = TRUE))
-SI_Table3<-print(summary_chla, n=30) #prints the table
-write.csv(SI_Table3, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table3.csv")
+SI_Table2<-print(summary_chla, n=30) #prints the table
+write.csv(SI_Table2, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table2.csv")
 
-SI_fig3<- ggplot(data=data2, 
+SI_fig2<- ggplot(data=data2, 
        mapping=aes(y=Chla_ugL, x=Treatment)) +
   geom_point(aes(shape=tDOM_added, color=Lake)) +
   scale_color_manual(values=c("skyblue3",
@@ -240,18 +276,18 @@ SI_fig3<- ggplot(data=data2,
   theme(axis.text.x = element_text(angle = 90, hjust=0.5,vjust=0.5),
         legend.position="none")  
 
-SI_fig3
-ggsave(SI_fig3, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Figure3_color.png",device="png", width=6, height=6, units="in")
+SI_fig2
+ggsave(SI_fig2, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Figure2_color.png",device="png", width=6, height=6, units="in")
 
 ### summarize and plot all post PC values ###
 summary_pc<- data2 %>%
   group_by(Lake, Treatment) %>%
   summarise(avgPC_ugL=mean(PC_ugL, na.rm=TRUE),
             sdPC_ugL=sd(PC_ugL, na.rm = TRUE))
-SI_Table4<- print(summary_pc, n=30)
-write.csv(SI_Table4, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table4.csv")
+SI_Table3<- print(summary_pc, n=30)
+write.csv(SI_Table3, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table3.csv")
 
-SI_fig4<- ggplot(data=data2, 
+SI_fig3<- ggplot(data=data2, 
        mapping=aes(y=PC_ugL, x=Treatment)) +
   geom_point(aes(shape=tDOM_added, color=Lake)) +
   scale_color_manual(values=c("skyblue3",
@@ -263,18 +299,18 @@ SI_fig4<- ggplot(data=data2,
   theme_classic() +
   theme(axis.text.x = element_text(angle = 90, hjust=0.5,vjust=0.5),
         legend.position = "none") 
-SI_fig4
-ggsave(SI_fig4, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Figure4_color.png",device="png", width=5, height=5, units="in", dpi=1200)
+SI_fig3
+ggsave(SI_fig3, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Figure3_color.png",device="png", width=5, height=5, units="in", dpi=1200)
 
 ### summarize and plot all post microcystin values ###
 summary_mic<- data2 %>%
   group_by(Lake, Treatment) %>%
   summarise(avgMic_ugL=mean(Microcystin_ugL, na.rm=TRUE),
             sdMic_ugL=sd(Microcystin_ugL, na.rm = TRUE))
-SI_Table5<- print(summary_mic, n=30)
-write.csv(SI_Table5, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table5.csv")
+SI_Table4<- print(summary_mic, n=30)
+write.csv(SI_Table4, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table4.csv")
 
-SI_fig8<- ggplot(data=data2, 
+SI_fig4<- ggplot(data=data2, 
        mapping=aes(y=Microcystin_ugL, x=Treatment)) +
   geom_point(aes(shape=tDOM_added, color=Lake)) +
   scale_color_manual(values=c("skyblue3",
@@ -288,32 +324,32 @@ SI_fig8<- ggplot(data=data2,
         legend.position = "none") +
   scale_y_continuous(trans='log10') +
   geom_hline(yintercept=0.19, linetype="dashed", color = "red")
-SI_fig8
-ggsave(SI_fig8, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Figure8_color.png",device="png", width=5, height=5, units="in", dpi=1200)
+SI_fig4
+ggsave(SI_fig4, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Figure4_color.png",device="png", width=5, height=5, units="in", dpi=1200)
 
 ### post DOC measurements ###
 summary_doc<- data2 %>%
   group_by(Lake, Treatment) %>%
   summarise(avgDOC_mgL=mean(DOC_mgL, na.rm=TRUE),
             sdDOC_mgL=sd(DOC_mgL, na.rm = TRUE))
-SI_Table6<- print(summary_doc, n =30)
-write.csv(SI_Table6, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table6.csv")
+SI_Table5<- print(summary_doc, n =30)
+write.csv(SI_Table5, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table5.csv")
 
 ### post TN measurements ###
 summary_TN<- data2 %>%
   group_by(Lake, Treatment) %>%
   summarise(avgTN_mgL=mean(TN_mgL, na.rm=TRUE),
             sdTN_mgL=sd(TN_mgL, na.rm = TRUE))
-SI_Table7<- print(summary_TN, n = 30)
-write.csv(SI_Table7, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table7.csv")
+SI_Table6<- print(summary_TN, n = 30)
+write.csv(SI_Table6, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table6.csv")
 
 ### post TP measurements ###
 summary_TP<- data2 %>%
   group_by(Lake, Treatment) %>%
   summarise(avgTP_mgL=mean(TP_mgL, na.rm=TRUE),
             sdTP_mgL=sd(TP_mgL, na.rm = TRUE))
-SI_Table8<- print(summary_TP, n = 30)
-write.csv(SI_Table8, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table8.csv")
+SI_Table7<- print(summary_TP, n = 30)
+write.csv(SI_Table7, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table7.csv")
 
 ### post dissolved measurements by Lake ###
 summary<- subset(data2, Lake=="Maumee") %>%
@@ -324,8 +360,8 @@ summary<- subset(data2, Lake=="Maumee") %>%
             sd_NH4=sd(NH4_N_ugL, na.rm = TRUE),
             avg_NO3=mean(NO3_N_ugL, na.rm=TRUE),
             sd_NO3=sd(NO3_N_ugL, na.rm = TRUE))
-SI_Table9<- print(summary)
-write.csv(SI_Table9, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table9.csv")
+SI_Table8<- print(summary)
+write.csv(SI_Table8, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table8.csv")
 
 summary<- subset(data2, Lake=="Sandusky") %>%
   group_by(Treatment) %>%
@@ -335,8 +371,8 @@ summary<- subset(data2, Lake=="Sandusky") %>%
             sd_NH4=sd(NH4_N_ugL, na.rm = TRUE),
             avg_NO3=mean(NO3_N_ugL, na.rm=TRUE),
             sd_NO3=sd(NO3_N_ugL, na.rm = TRUE))
-SI_Table10<- print(summary)
-write.csv(SI_Table10, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table10.csv")
+SI_Table9<- print(summary)
+write.csv(SI_Table9, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table9.csv")
 
 summary<- subset(data2, Lake=="Grand") %>%
   group_by(Treatment) %>%
@@ -346,289 +382,193 @@ summary<- subset(data2, Lake=="Grand") %>%
             sd_NH4=sd(NH4_N_ugL, na.rm = TRUE),
             avg_NO3=mean(NO3_N_ugL, na.rm=TRUE),
             sd_NO3=sd(NO3_N_ugL, na.rm = TRUE))
-SI_Table11<- print(summary)
-write.csv(SI_Table11, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table11.csv")
+SI_Table10<- print(summary)
+write.csv(SI_Table10, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Table10.csv")
 ```
 
 Post-measurements summarized by treatments.
 
 # Part 2. Analyze difference in treatments
 
-## Step 1. Comparing controls and tDOM only groups:
+## Step 1. Comparing controls, tDOM only, and nutrient only groups:
 
-a) running repeated measures ANCOVA for Chla...
+a) running repeated measures ANOVA for Chla...
 
 ```{r}
 ### subset the data ###
 SHtest_Chl<- data2 %>% #create new data frame focused on response
-  filter(Treatment=="control" | Treatment =="manure" | Treatment=="crop"|Treatment=="wetland") %>% #treatments selected
-  select(Lake, tDOM_added, tDOM_source, Replicate, Chla_ugL, pre_Chl)
+  filter(Treatment=="control" | Treatment=="nutrients only"| Treatment =="wetland" | Treatment=="crop"|Treatment=="manure")  #treatments selected
 
 ### write the model ###
-Chl_ancova<- (lm(data=SHtest_Chl, 
-               log10(Chla_ugL)~log10(pre_Chl)+tDOM_source)) 
+Chl_anova<- (aov(data=SHtest_Chl, 
+               log10(Chla_ugL)~log10(pre_Chl)+Treatment)) 
 
 ### check assumptions of the model ###
 par(mfrow=c(2,2)) #structure graphs as matrix
-SI_fig11b<- plot(Chl_ancova) #print model diagnostics
+SI_Figure5<-plot(Chl_anova) #print model diagnostics
 par(mfrow=c(1,1)) #return to default settings
 
 ### print the summary statistics from the model ###
-anova(Chl_ancova) #print the SS summary table
-summary(Chl_ancova) #print the estimated parameters table
+summary(Chl_anova) #print the estimated parameters table
 
 ### comparison across source waters ###
-SI_fig11a<-ggplot(data=SHtest_Chl, #plots the model
-       aes(x=log10(pre_Chl), y=log10(Chla_ugL), color=tDOM_source)) +
+SI_Fig6a<-ggplot(data=SHtest_Chl, #plots the model
+       aes(x=log10(pre_Chl), y=log10(Chla_ugL), color=Treatment)) +
   geom_point(aes(shape=Lake)) + 
   geom_smooth(method="lm", se=TRUE) +
-  #scale_color_manual(values=c("skyblue3","saddlebrown")) +
   theme_classic() + #classic publication format
+  scale_color_manual(values=c("skyblue3","darkgreen","saddlebrown","gold","darkblue")) +
   labs(x="Pre Chlorophyll-a (ug/L), log10-transformed",
        y="Post Chlorophyll-a (ug/L), log10-transformed",
        color="Treatment", shape="Source Water")
-SI_fig11a
-ggsave(SI_fig11a, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Figure11a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
+SI_Fig6a
 
-### comparison within source waters ###
-SHtest_Chl<- SHtest_Chl %>%
-  mutate(Chl_diff_ugL= (Chla_ugL-pre_Chl)) #add field with post-pre 
-comparisons<- list(c("none", "tDOM added")) #name the comparison groups
-
-fig2a<- ggplot(data=SHtest_Chl, aes(x=tDOM_added, y=Chl_diff_ugL,
-                                    color=tDOM_added)) +
-  geom_point() +
-  stat_summary(fun="median", geom="crossbar") +
-  theme_classic() +
-  theme(axis.text.x=element_text(angle=45, hjust=1, size=12),
-        axis.text.y=element_text(size=12),
-        strip.text.x=element_text(size=12),
-        axis.title=element_text(size=12))+
-  theme(legend.position="none") +
-  facet_wrap(~Lake) + 
-  geom_hline(yintercept=0, linetype="dashed") +
-  scale_color_manual(values=c("skyblue3","saddlebrown")) +
-  labs(x="Treatment group",
-       y="Post-Pre Chlorophyll-a (ug/L)") +
-  stat_compare_means(comparisons=comparisons,
-                     label="p.signif", size=8, label.y = 100,
-                     method="t.test")
-fig2a
+comparisons<- compare_means(data=SHtest_Chl, Chla_ugL ~ Treatment, ref.group = ".all", method="t.test") #name the comparison groups
+SI_Fig6b<- ggboxplot(SHtest_Chl, x="Treatment", y="Chla_ugL",
+                  add="point", 
+                  ylab="Chlorophyll-a (ug/L)") + 
+  stat_compare_means(method="anova", label.y=300, label.x=4)+
+  stat_compare_means(label="p.signif", method="t.test", ref.group = ".all.") + theme(axis.text.x=element_text(angle=45, hjust=1))
+SI_Fig6b
+SI_Fig6<- ggarrange(SI_Fig6a,SI_Fig6b, ncol=2, nrow=1)
+SI_Fig6
+ggsave(SI_Fig6, file="Y1_Exp2_tDOMsource/Products/SI_Figures/Figure6_color.png",device="png", width=6, height=5, units="in", dpi=1200)
 ```
 
-CHl-a RM-ANCOVA model plotted. 
+Chl-a RM-ANCOVA model plotted. 
 
-b) running repeated measures ANCOVA for PC...
+b) running repeated measures ANOVA for PC...
 
 ```{r}
 ### subset the data ###
 SHtest_PC<- data2 %>% #create new data frame focused on response
-  filter(Treatment=="control" | Treatment =="manure"|Treatment=="crop"|Treatment=="wetland") %>% #treatments selected
-  select(Lake, tDOM_added, tDOM_source, Replicate, PC_ugL, pre_PC)
+  filter(Treatment=="control" | Treatment=="nutrients only"| Treatment =="wetland" | Treatment=="crop"|Treatment=="manure")  #treatments selected
 
 ### write the model ###
-PC_ancova<- (lm(data=SHtest_PC, 
-               log10(PC_ugL)~log10(pre_PC)+tDOM_source)) 
+PC_anova<- (aov(data=SHtest_PC, 
+               log10(PC_ugL)~log10(pre_PC)+Treatment)) 
 
 ### check assumptions of the model ###
 par(mfrow=c(2,2))
-SI_fig12b<- plot(PC_ancova) #print model diagnostics
+SI_Figure7<-plot(PC_anova) #print model diagnostics
 par(mfrow=c(1,1))
 
 ### print the summary statistics from the model ###
-anova(PC_ancova) #print the SS summary table
-summary(PC_ancova) #print the estimated parameters table
+summary(PC_anova) #print the estimated parameters table
 
 ### comparison across source waters ###
-SI_fig12a<-ggplot(data=SHtest_PC, #plots the model
-       aes(x=log10(pre_PC), y=log10(PC_ugL), color=tDOM_source)) +
+SI_Fig8a<-ggplot(data=SHtest_PC, #plots the model
+       aes(x=log10(pre_PC), y=log10(PC_ugL), color=Treatment)) +
   geom_point(aes(shape=Lake)) + 
   geom_smooth(method="lm", se=TRUE) +
-  #scale_color_manual(values=c("skyblue3","saddlebrown")) +
   theme_classic() + #classic publication format
+  scale_color_manual(values=c("skyblue3","darkgreen","saddlebrown","gold","darkblue")) +
   labs(x="Pre Phycocyanin (ug/L), log10-transformed",
        y="Post Phycocyanin (ug/L), log10-transformed",
        color="Treatment", shape="Source Water")
-SI_fig12a
-ggsave(SI_fig12a, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Figure12a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
+SI_Fig8a
 
-### comparison within source waters ###
-SHtest_PC<- SHtest_PC %>%
-  mutate(PC_diff_ugL= (PC_ugL-pre_PC)) #add field with post-pre 
-comparisons<- list(c("none", "tDOM added")) #name the comparison groups
-
-fig2b<- ggplot(data=SHtest_PC, aes(x=tDOM_added, y=PC_diff_ugL,
-                                    color=tDOM_added)) +
-  geom_point() +
-  stat_summary(fun="median", geom="crossbar") +
-  theme_classic() +
-  theme(axis.text.x=element_text(angle=45, hjust=1, size=12),
-        axis.text.y=element_text(size=12),
-        strip.text.x=element_text(size=12),
-        axis.title=element_text(size=12))+
-  theme(legend.position="none") +
-  facet_wrap(~Lake) + 
-  geom_hline(yintercept=0, linetype="dashed") +
-  scale_color_manual(values=c("skyblue3","saddlebrown")) +
-  labs(x="Treatment group",
-       y="Post-Pre Phycocyanin (ug/L)",
-       color="Treatment") +
-  stat_compare_means(comparisons=comparisons,
-                     label="p.signif", size=8, label.y=1500,
-                     method="t.test")
-fig2b
+comparisons<- compare_means(data=SHtest_PC, PC_ugL ~ Treatment, ref.group = ".all.", method="t.test") #name the comparison groups
+SI_Fig8b<- ggboxplot(SHtest_Chl, x="Treatment", y="PC_ugL",
+                  add="point", 
+                  ylab="Phycocyanin (ug/L)") + 
+  stat_compare_means(method="anova", label.y=1500, label.x=4)+
+  stat_compare_means(label="p.signif", method="t.test", ref.group = ".all.") + theme(axis.text.x=element_text(angle=45, hjust=1))
+SI_Fig8b
+SI_Fig8<- ggarrange(SI_Fig8a,SI_Fig8b, ncol=2, nrow=1)
+SI_Fig8
+ggsave(SI_Fig8, file="Y1_Exp2_tDOMsource/Products/SI_Figures/Figure8_color.png",device="png", width=6, height=5, units="in", dpi=1200)
 ```
 
-PC RM-ANCOVA model plotted.
+PC RM-ANOVA model plotted.
 
-c) running repeated measures ANCOVA for microcystin...
+c) running repeated measures ANOVA for microcystin...
 
 ```{r}
 ### subset the data ###
 SHtest_MC<- data2 %>% #create new data frame focused on response
-  filter(Treatment=="control" | Treatment =="manure"|Treatment=="crop"|Treatment=="wetland") %>% #treatments selected
-  select(Lake, tDOM_added, tDOM_source, Replicate, Microcystin_ugL, pre_Mic)
+  filter(Treatment=="control" | Treatment=="nutrients only"| Treatment =="wetland" | Treatment=="crop"|Treatment=="manure")  #treatments selected
 
 ### write the model ###
-MC_ancova<- lm(data=SHtest_MC, 
-               log10(Microcystin_ugL) ~ log10(pre_Mic) + tDOM_source) 
+MC_anova<- (aov(data=SHtest_MC, 
+               log10(Microcystin_ugL)~log10(pre_Mic)+Treatment)) 
 
 ### check assumptions of the model ###
 par(mfrow=c(2,2))
-SI_fig13b<- plot(MC_ancova) #print model diagnostics
+SI_Fig9<-plot(MC_anova) #print model diagnostics
 par(mfrow=c(1,1))
 
 ### print the summary statistics from the model ###
-anova(MC_ancova) #print the SS summary table
-summary(MC_ancova) #print the estimated parameters table
+summary(MC_anova) #print the estimated parameters table
 
 ### comparison across source waters ###
-SI_fig13a<-ggplot(data=SHtest_MC, #plots the model
-       aes(x=log10(pre_Mic), y=log10(Microcystin_ugL), color=tDOM_source)) +
+Fig10a<-ggplot(data=SHtest_MC, #plots the model
+       aes(x=log10(pre_Mic), y=log10(Microcystin_ugL), color=Treatment)) +
   geom_point(aes(shape=Lake)) + 
   geom_smooth(method="lm", se=TRUE) +
- # scale_color_manual(values=c("skyblue3","saddlebrown")) +
-  theme_classic() +
+  theme_classic() + #classic publication format
+  scale_color_manual(values=c("skyblue3","darkgreen","saddlebrown","gold","darkblue")) +
   labs(x="Pre Microcystin (ug/L), log10-transformed",
        y="Post Microcystin (ug/L), log10-transformed",
-       shape="Source Water",
-       color="Treatment")
-SI_fig13a
-ggsave(SI_fig13a, file="Y1_Exp2_tDOMsource/Products/SI_Figures/SI_Figure13a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
+       color="Treatment", shape="Source Water")
+Fig10a
 
-### comparison within source waters ###
-SHtest_MC<- SHtest_MC %>%
-  mutate(MC_diff_ugL= (Microcystin_ugL-pre_Mic)) #add field with post-pre 
-comparisons<- list(c("none", "tDOM added")) #name the comparison groups
-
-fig2c<- ggplot(data=SHtest_MC, aes(x=tDOM_added, y=MC_diff_ugL,
-                                    color=tDOM_added)) +
-  geom_point() +
-  stat_summary(fun="median", geom="crossbar") +
-  theme_classic() +
-  theme(axis.text.x=element_text(angle=45, hjust=1, size=12),
-        axis.text.y=element_text(size=12),
-        strip.text.x=element_text(size=12),
-        axis.title=element_text(size=12))+
-  theme(legend.position="none") +
-  facet_wrap(~Lake) + 
-  scale_color_manual(values=c("skyblue3","saddlebrown")) +
-  geom_hline(yintercept=0, linetype="dashed") +
-  labs(x="Treatment group",
-       y="Post-Pre Microcystin (ug/L)",
-       color="Treatment") +
-  stat_compare_means(comparisons=comparisons,
-                     label="p.signif", size=8, label.y=4,
-                     method="t.test")
-fig2c
+comparisons<- compare_means(data=SHtest_MC, Microcystin_ugL ~ Treatment, ref.group = ".all", method="t.test") #name the comparison groups
+Fig10b<- ggboxplot(SHtest_Chl, x="Treatment", y="Microcystin_ugL",
+                  add="point", 
+                  ylab="Microcystin (ug/L)") + 
+  stat_compare_means(method="anova", label.y=60, label.x=4)+
+  stat_compare_means(label="p.signif", method="t.test", ref.group = ".all.") + theme(axis.text.x=element_text(angle=45, hjust=1))
+Fig10b
+Fig10<- ggarrange(Fig10a,Fig10b, ncol=2, nrow=1)
+Fig10
+ggsave(Fig10, file="Y1_Exp2_tDOMsource/Products/Figure10_color.png",device="png", width=6, height=5, units="in", dpi=1200)
 ```
 
-Microcystin RM-ANCOVA models summarized and plotted.
+Microcystin RM-ANOVA models summarized and plotted.
 
-d) saving plots...
-
-```{r}
-fig2<- ggarrange(fig2a, fig2b, fig2c, ncol=3, nrow=1)
-fig2
-#ggsave(fig2, file="Y1_Exp1_SHtrials/Products/Figure2_color.png", device="png", width=6, height=5, units="in", dpi=1200)
-```
-
-Plots saved.
-
-## Step 2. Compare treatments with nutrients added:
+## Step 2. Compare treatments with 3-way RM-ANCOVA:
 
 a) running three-way, repeated measures ANCOVA of chl-a...
 
 ```{r}
-### subset the data ###
-SHtest2_Chl<- data2 %>% #create new data frame focused on response
-  filter(Treatment!="control")%>% #remove groups already compared 
-  select(Lake, Replicate, tDOM_added, tDOM_source, Chla_ugL, pre_Chl) #select fields needed
-  
-SHtest2_Chl$tDOM_added<-factor(SHtest2_Chl$tDOM_added,
-                                   levels=c('none','tDOM added')) #redefine the levels
-
 ### write the model ###
-Chl_ancova2<- lm(data=SHtest2_Chl, 
-               log10(Chla_ugL)~log10(pre_Chl)+tDOM_added*tDOM_source) 
+Chl_ancova2<- aov(data=data2, 
+               log10(Chla_ugL)~log10(pre_Chl)+tDOM_added*Nut_added*tDOM_source)  
 
 ### check assumptions of the model ###
 par(mfrow=c(2,2))
-SI_Fig14b<-plot(Chl_ancova2) #plot diagnostics for model
+SI_Fig11<- plot(Chl_ancova2) #plot diagnostics for model
 par(mfrow=c(1,1))
 
 ### print the summary statistics from the model ###
-anova(Chl_ancova2) #print the SS summary table
 summary(Chl_ancova2) #prints the estimated parameters table
 
-### compare across groups ###
-SI_fig14a<- ggplot(data=SHtest2_Chl, #plots the model
-              aes(x=log10(pre_Chl), y=log10(Chla_ugL), color=tDOM_added)) +
-  geom_point(aes(shape=Lake)) + 
-  geom_smooth(method="lm", se=TRUE) +
-  scale_color_manual(values=c("skyblue3","saddlebrown")) +
-  theme_classic() +
-  labs(x="Pre Chlorophyll-a (ug/L), log10-transformed",
-       y="Post Chlorophyll-a (ug/L), log10-transformed",
-       shape="Source Water",
-       color="Treatment")
-SI_fig14a
-ggsave(SI_fig14a, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Figure14a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
-
 ### compare within source waters ###
-SHtest2_Chl<- SHtest2_Chl %>%
-  mutate(Chl_diff_ugL= (Chla_ugL-pre_Chl)) #add field with post-pre 
+comparisons<- list(c("control", "nutrients only"),
+                     c("wetland", "wetland + nutrients"),
+                   c("crop", "crop + nutrients"),
+                   c("manure", "manure + nutrients"))
 
-ratiolabs<- c("Low N:P", "High N:P") #assign labels for N:P ratio factor
-names(ratiolabs)<- c("low", "high") #create names from labels
-formlabs<- c("NH4", "Urea") #assign labels for N form factor
-names(formlabs)<- c("NH4", "urea") #create names from labels
-comparisons<- list(c("low N:P, NH4", "SH + low N:P, NH4"),
-                   c("low N:P, urea", "SH + low N:P, urea"),
-                   c("high N:P, NH4", "SH + high N:P, NH4"),
-                   c("high N:P, urea", "SH + high N:P, urea"))
-
-Figure3<- ggplot(data=SHtest2_Chl, aes(x=Lake, y=Chl_diff_ugL,
-                                         color=tDOM_added, shape=tDOM_added)) +
+Figure3<- ggplot(data=data2, aes(x=tDOM_source, y=Chla_ugL,
+                                         color=Nut_added)) +
   geom_point() +
   stat_summary(fun="median", geom="crossbar") +
   theme_classic() +
-  scale_color_manual(values=c("skyblue3","saddlebrown")) +
-  facet_grid(Added_Nform~AddedNut_ratio, 
-             labeller = labeller(Added_Nform=formlabs, AddedNut_ratio=ratiolabs)) +
+  scale_color_manual(values=c("darkblue","darkgreen")) +
   theme_classic() +
+  facet_wrap(~Lake)+
   theme(axis.text.x=element_text(angle=45, hjust=1, size=12),
         axis.text.y=element_text(size=12),
         strip.text=element_text(size=12),
         axis.title=element_text(size=12),legend.position='top')+
-  geom_hline(yintercept=0, linetype="dashed")+
-  labs(x="Source Water",
-       y="Post-Pre Chlorophyll-a (ug/L)", 
-       shape="Treatment", color=NULL) +
-  stat_compare_means(label="p.signif", size=8, label.y=300,
+  labs(x="tDOM Source",
+       y="Chlorophyll-a (ug/L)",
+       color="Nutrients added:") +
+  stat_compare_means(label="p.signif", size=8, label.y=500,
                      method="t.test")
 Figure3
-#ggsave(Figure3, file="Y1_Exp1_SHtrials/Products/Figure3_color.png", device="png", width=5, height=5, units="in", dpi=1200)
+ggsave(Figure3, file="Y1_Exp2_tDOMsource/Products/Figure3_color.png", device="png", width=6, height=6, units="in", dpi=1200)
 ```
 
 Chla RM-ANCOVA ran and plotted.
@@ -636,175 +576,87 @@ Chla RM-ANCOVA ran and plotted.
 b) running three-way, repeated measures ANCOVA of phycocyanin...
 
 ```{r}
-### subset the data ###
-SHtest2_PC<- data2 %>% #create new data frame focused on response
-  filter(Treatment!="control", Treatment!="SH only") %>% #remove treatments already compared 
-  select(Lake, Replicate, tDOM_added, AddedNut_ratio, Added_Nform,
-         PC_ugL, pre_PC)
-  
-SHtest2_PC$AddedNut_ratio<-factor(SHtest2_PC$AddedNut_ratio,
-                                  levels=c('low','high')) #redefine the levels
-SHtest2_PC$Added_Nform<-factor(SHtest2_PC$Added_Nform, 
-                               levels=c('NH4','urea')) #redefine the levels
-
 ### write the model ###
-PC_ancova2<- lm(data=SHtest2_PC, 
-               log10(PC_ugL)~log10(pre_PC)+tDOM_added*AddedNut_ratio*Added_Nform)
+PC_ancova<- aov(data=data2, 
+               log10(PC_ugL)~log10(pre_PC)+tDOM_added*Nut_added*tDOM_source)  
 
 ### check assumptions of the model ###
 par(mfrow=c(2,2))
-plot(PC_ancova2)
-par(mfrow=c(1,1))
-
-### remove outliers and rerun model ###
-SHtest2_PC <- SHtest2_PC[-c(8,11),] #delete record 8 and 11 as outliers.
-PC_ancova2<- lm(data=SHtest2_PC, 
-               log10(PC_ugL)~log10(pre_PC)+tDOM_added*AddedNut_ratio*Added_Nform)
-par(mfrow=c(2,2))
-SI_fig15b<- plot(PC_ancova2)
+SI_Fig12<- plot(PC_ancova) #plot diagnostics for model
 par(mfrow=c(1,1))
 
 ### print the summary statistics from the model ###
-anova(PC_ancova2) #print the SS summary table
-summary(PC_ancova2) #print the estimated parameter table
-
-### compare across groups ###
-SI_fig15a<- ggplot(data=SHtest2_PC, #plots the model
-       aes(x=log10(pre_PC), y=log10(PC_ugL), color=tDOM_added)) +
-  geom_point(aes(shape=Lake)) + 
-  geom_smooth(method="lm", se=TRUE) +
-  scale_color_manual(values=c("skyblue3","saddlebrown")) +
-  theme_classic() +
-  labs(x="Pre Phycocyanin (ug/L), log10-transformed",
-       y="Post Phycocyanin (ug/L), log10-transformed",
-       shape="Source Water",
-       color="Treatment")
-SI_fig15a
-ggsave(SI_fig15a, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Figure15a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
+summary(PC_ancova) #prints the estimated parameters table
 
 ### compare within source waters ###
-SHtest2_PC<- SHtest2_PC %>%
-  mutate(PC_diff_ugL= (PC_ugL-pre_PC)) #add field with post-pre 
+comparisons<- list(c("control", "nutrients only"),
+                     c("wetland", "wetland + nutrients"),
+                   c("crop", "crop + nutrients"),
+                   c("manure", "manure + nutrients"))
 
-ratiolabs<- c("Low N:P", "High N:P") #assign labels for N:P ratio factor
-names(ratiolabs)<- c("low", "high") #create names from labels
-formlabs<- c("NH4", "Urea") #assign labels for N form factor
-names(formlabs)<- c("NH4", "urea") #create names from labels
-comparisons<- list(c("low N:P, NH4", "SH + low N:P, NH4"),
-                   c("low N:P, urea", "SH + low N:P, urea"),
-                   c("high N:P, NH4", "SH + high N:P, NH4"),
-                   c("high N:P, urea", "SH + high N:P, urea"))
-
-Figure4<- ggplot(data=SHtest2_PC, aes(x=Lake, y=PC_diff_ugL,
-                                       color=tDOM_added, shape=tDOM_added)) +
+Figure4<- ggplot(data=data2, aes(x=tDOM_source, y=PC_ugL,
+                                         color=Nut_added)) +
   geom_point() +
   stat_summary(fun="median", geom="crossbar") +
   theme_classic() +
-  scale_color_manual(values=c("skyblue3","saddlebrown")) +
-  facet_grid(Added_Nform~AddedNut_ratio, 
-             labeller = labeller(Added_Nform=formlabs, AddedNut_ratio=ratiolabs)) +
+  scale_color_manual(values=c("darkblue","darkgreen")) +
   theme_classic() +
+  facet_wrap(~Lake)+
   theme(axis.text.x=element_text(angle=45, hjust=1, size=12),
         axis.text.y=element_text(size=12),
         strip.text=element_text(size=12),
         axis.title=element_text(size=12),legend.position='top')+
-  geom_hline(yintercept=0, linetype="dashed")+
-  labs(x="Source Water",
-       y="Post-Pre Phycocyanin (ug/L)",
-       shape="Treatment", color=NULL) +
-  ylim(-1500, 4100) +
-  stat_compare_means(label="p.signif", size=8, label.y=3700, 
+  labs(x="tDOM Source",
+       y="Phycocyanin (ug/L)",
+       color="Nutrients added:") +
+  stat_compare_means(label="p.signif", size=8, label.y=1000,
                      method="t.test")
 Figure4
-#ggsave(Figure4, file="HABRI_Y1_Experiment1/Products/Figure4_color.jpeg", device="jpeg", width=4, height=4, units="in", dpi=1200)
+ggsave(Figure4, file="Y1_Exp2_tDOMsource/Products/Figure4_color.png", device="png", width=6, height=6, units="in", dpi=1200)
 ```
 
 PC RM-ANCOVA ran and plotted.
 
-c) RM-ANCOVA of microcystin...
+c) running 3-way RM-ANCOVA of microcystin...
 
 ```{r}
-### subset the data ###
-SHtest2_MC<- data2 %>% #create new data frame focused on response
-  filter(Treatment!="control", Treatment!="SH only")%>% #remove groups already compared 
-  select(Lake, Replicate, tDOM_added, AddedNut_ratio, Added_Nform,
-         Microcystin_ugL, pre_Mic) #select fields needed
-
-SHtest2_MC$AddedNut_ratio<-factor(SHtest2_MC$AddedNut_ratio,
-                                   levels=c('low','high')) #redefine the levels
-SHtest2_MC$Added_Nform<-factor(SHtest2_MC$Added_Nform, 
-                                levels=c('NH4','urea')) #redefine the levels
-
 ### write the model ###
-MC_ancova2<- lm(data=SHtest2_MC, 
-               log10(Microcystin_ugL)~log10(pre_Mic)+tDOM_added*AddedNut_ratio*Added_Nform) #ANCOVA model with pre as covar
+MC_ancova<- aov(data=data2, 
+               log10(Microcystin_ugL)~log10(pre_Mic)+tDOM_added*Nut_added*tDOM_source)  
 
 ### check assumptions of the model ###
 par(mfrow=c(2,2))
-plot(MC_ancova2) #print model diagnostics
-par(mfrow=c(1,1))
-
-### remove outliers and rerun model ###
-SHtest2_MC <- SHtest2_MC[-c(56,57,60),] #delete record 8 and 11 as outliers.
-MC_ancova2<- lm(data=SHtest2_MC, 
-               log10(Microcystin_ugL)~log10(pre_Mic)+tDOM_added*AddedNut_ratio*Added_Nform)
-par(mfrow=c(2,2))
-SI_Figure16b<-plot(MC_ancova2) #print model diagnostics
+SI_Fig13<- plot(MC_ancova) #plot diagnostics for model
 par(mfrow=c(1,1))
 
 ### print the summary statistics from the model ###
-anova(MC_ancova2) #print the SS summary table
-summary(MC_ancova2) #print the estimated parameter table
-
-### compare across groups ###
-SI_fig16a<- ggplot(data=SHtest2_MC, #plots the model
-       aes(x=log10(pre_Mic), y=log10(Microcystin_ugL), color=tDOM_added)) +
-  geom_point(aes(shape=Lake)) + 
-  geom_smooth(method="lm", se=TRUE) +
-  scale_color_manual(values=c("skyblue3","saddlebrown")) +
-  theme_classic() +
-  labs(x="Pre Microcystin (ug/L), log10-transformed",
-       y="Post Microcystin (ug/L), log10-transformed",
-       shape="Source Water",
-       color="Treatment")
-SI_fig16a
-ggsave(SI_fig16a, file="Y1_Exp1_SHtrials/Products/SI_Figures/SI_Figure16a_color.png",device="png", width=5, height=5, units="in", dpi=1200)
-
+summary(Chl_ancova2) #prints the estimated parameters table
 
 ### compare within source waters ###
-SHtest2_MC<- SHtest2_MC %>%
-  mutate(MC_diff_ugL= (Microcystin_ugL-pre_Mic)) #add field with post-pre 
+comparisons<- list(c("control", "nutrients only"),
+                     c("wetland", "wetland + nutrients"),
+                   c("crop", "crop + nutrients"),
+                   c("manure", "manure + nutrients"))
 
-ratiolabs<- c("Low N:P", "High N:P") #assign labels for N:P ratio factor
-names(ratiolabs)<- c("low", "high") #create names from labels
-formlabs<- c("NH4", "Urea") #assign labels for N form factor
-names(formlabs)<- c("NH4", "urea") #create names from labels
-comparisons<- list(c("low N:P, NH4", "SH + low N:P, NH4"),
-                   c("low N:P, urea", "SH + low N:P, urea"),
-                   c("high N:P, NH4", "SH + high N:P, NH4"),
-                   c("high N:P, urea", "SH + high N:P, urea"))
-
-Figure5<- ggplot(data=SHtest2_MC, aes(x=Lake, y=MC_diff_ugL,
-                                       color=tDOM_added, shape=tDOM_added)) +
+Figure5<- ggplot(data=data2, aes(x=tDOM_source, y=Microcystin_ugL,
+                                         color=Nut_added)) +
   geom_point() +
   stat_summary(fun="median", geom="crossbar") +
   theme_classic() +
-  scale_color_manual(values=c("skyblue3","saddlebrown")) +
-  facet_grid(Added_Nform~AddedNut_ratio, 
-             labeller = labeller(Added_Nform=formlabs, AddedNut_ratio=ratiolabs)) +
+  scale_color_manual(values=c("darkblue","darkgreen")) +
   theme_classic() +
+  facet_wrap(~Lake)+
   theme(axis.text.x=element_text(angle=45, hjust=1, size=12),
         axis.text.y=element_text(size=12),
         strip.text=element_text(size=12),
         axis.title=element_text(size=12),legend.position='top')+
-  geom_hline(yintercept=0, linetype="dashed")+
-  labs(x="Source Water",
-       y="Post-Pre Microcystin (ug/L)",
-       shape="Treatment", color=NULL) +
-  stat_compare_means(label="p.signif", size=8, label.y=35, 
+  labs(x="tDOM Source",
+       y="Microcystins (ug/L)",
+       color="Nutrients added:") +
+  stat_compare_means(label="p.signif", size=8, label.y=100,
                      method="t.test")
 Figure5
-#ggsave(Figure5, file="HABRI_Y1_Experiment1/Products/Figure5_color.jpeg", device="jpeg", width=4, height=4, units="in", dpi=1200)
+ggsave(Figure5, file="Y1_Exp2_tDOMsource/Products/Figure5_color.png", device="png", width=6, height=6, units="in", dpi=1200)
 ```
 
 Microcystin RM-ANCOVA model ran and plotted.
@@ -813,14 +665,8 @@ Microcystin RM-ANCOVA model ran and plotted.
 d) standardizing microcystin by Chla...
 
 ```{r}
-### subset the data for the two tests ###
-no_nutr<- data2 %>% #create new data frame focused on response
-  filter(Treatment=="control" | Treatment =="SH only")
-yes_nutr<- data2 %>% #create new data frame focused on response
-  filter(Treatment!="control", Treatment!="SH only") #remove groups already compared 
-
 ### view the data ###
-MC_chla_nonutr<- ggplot(data=no_nutr, aes(x=tDOM_added, y=(Microcystin_ugL/Chla_ugL), color=tDOM_added)) +
+MC_chla<- ggplot(data=data2, aes(x=tDOM_source, y=(Microcystin_ugL/Chla_ugL), color=Nut_added)) +
    geom_boxplot() + 
   facet_wrap(~Lake) +
   theme_classic()+
@@ -828,46 +674,22 @@ MC_chla_nonutr<- ggplot(data=no_nutr, aes(x=tDOM_added, y=(Microcystin_ugL/Chla_
         axis.text.y=element_text(size=12),
         strip.text=element_text(size=12),
         axis.title=element_text(size=12), legend.position='none')+
-  scale_color_manual(values=c("skyblue3","saddlebrown")) +
+  scale_color_manual(values=c("darkblue","darkgreen")) +
   labs(y="toxin:chl-a")
-MC_chla_nonutr
-
-MC_chla_nutr<- ggplot(data=yes_nutr, aes(x=Treatment, y=(Microcystin_ugL/Chla_ugL), color=tDOM_added)) +
-   geom_boxplot() + 
-  facet_wrap(~Lake)+
-  theme_classic()+
-  theme(axis.text.x=element_text(angle=45, hjust=1, size=12),
-        axis.text.y=element_text(size=12),
-        strip.text=element_text(size=12),
-        axis.title=element_text(size=12), legend.position='none')+
-  scale_color_manual(values=c("skyblue3","saddlebrown")) +
-  labs(y="toxin:chl-a")
-MC_chla_nutr
+MC_chla
 
 ### calculate means ###
-means_MCchla_nutr<- yes_nutr %>%
+means_MCchla<- data2 %>%
   group_by(Lake) %>%
   summarise(meanMCchla=mean(Microcystin_ugL/Chla_ugL, na.rm=TRUE), 
             sd_MCchla=sd(Microcystin_ugL/Chla_ugL, na.rm=TRUE)) 
-means_MCchla_nutr
+means_MCchla
 
-means_MCchla_nonutr<- no_nutr %>%
-  group_by(Lake) %>%
-  summarise(meanMCchla=mean(Microcystin_ugL/Chla_ugL, na.rm=TRUE), 
-            sd_MCchla=sd(Microcystin_ugL/Chla_ugL, na.rm=TRUE)) 
-means_MCchla_nonutr
-### without nutrients ###
-MC_chla_ancova<- lm(data=no_nutr, 
-               (Microcystin_ugL/Chla_ugL)~(pre_Mic/pre_Chl)+tDOM_added) 
+### run ANCOVA ###
+MC_chla_ancova<- aov(data=data2, 
+               (Microcystin_ugL/Chla_ugL)~(preMic/pre_Chl)+ tDOM_added*Nut_added*tDOM_source) 
 
-anova(MC_chla_ancova)
 summary(MC_chla_ancova)
-
-### with nutrients ###
-MC_chla_ancova2<- lm(data=yes_nutr, 
-               (Microcystin_ugL/Chla_ugL)~(pre_Mic/pre_Chl)+tDOM_added*Nut_added*AddedNut_ratio*Added_Nform) 
-
-anova(MC_chla_ancova2)
 ```
 
 MC:chla analyzed.
